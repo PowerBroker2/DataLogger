@@ -63,9 +63,7 @@ void setup()
   Serial.begin(115200);
 
   if (!sd.begin(SD_CONFIG))
-  {
     Serial.println("<<<<<<<<<<<<<<<<<<<< SD initialization failed >>>>>>>>>>>>>>>>>>>>");
-  }
   else
     Serial.println("SD initialization succeeded");
 
