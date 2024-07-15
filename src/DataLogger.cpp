@@ -200,7 +200,7 @@ bool logger::addIntStrMessageField(const int32_t& val,
 
 bool logger::addDelimiter()
 {
-    addMessageField(',');
+    return addMessageField(',');
 }
 
 
@@ -208,7 +208,7 @@ bool logger::addDelimiter()
 
 bool logger::addNewline()
 {
-    addMessageField('\n');
+    return addMessageField('\n');
 }
 
 

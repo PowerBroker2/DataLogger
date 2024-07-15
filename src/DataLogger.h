@@ -40,28 +40,28 @@ bool    mkdir(SdFs& _sd, char path[]);
 class logger
 {
 public: // <<---------------------------------------//public
-    void     begin(const bool& _csv          = true,
-                   const uint32_t& _buffSize = log_space::DEFAULT_BUFF_SIZE);
-    void     setStream(Stream& _stream);
-    void     setSD(SdFs&       _sd,
-                   FsFile&     _logFile,
-                   const char* _filePath);
-    void     setLogType(const bool& _csv);
-    bool     getLogType();
-    bool     isConnected();
-    void     resetMessageIndex();
-    uint16_t calculateChecksum();
-    int16_t  cpyMessageToBuff(const int& startIndex = 0);
-    int      flush();
-    bool     addDoubleStrMessageField(const double&  val,
-                                      const int16_t& numAfterDecimal = 6,
-                                      const int16_t& minStringWidth  = 1);
-    bool     addIntStrMessageField(const int32_t& val,
-                                   const int16_t& radix = 10);
-    bool     addDelimiter();
-    bool     addNewline();
-    bool     addChecksumMessageField();
-    bool     finishUpMessage();
+    void        begin(const bool& _csv          = true,
+                      const uint32_t& _buffSize = log_space::DEFAULT_BUFF_SIZE);
+    void        setStream(Stream& _stream);
+    void        setSD(SdFs&       _sd,
+                      FsFile&     _logFile,
+                      const char* _filePath);
+    void        setLogType(const bool& _csv);
+    bool        getLogType();
+    bool        isConnected();
+    void        resetMessageIndex();
+    uint16_t    calculateChecksum();
+    int16_t     cpyMessageToBuff(const int& startIndex = 0);
+    virtual int flush();
+    bool        addDoubleStrMessageField(const double&  val,
+                                         const int16_t& numAfterDecimal = 6,
+                                         const int16_t& minStringWidth  = 1);
+    bool        addIntStrMessageField(const int32_t& val,
+                                      const int16_t& radix = 10);
+    bool        addDelimiter();
+    bool        addNewline();
+    bool        addChecksumMessageField();
+    bool        finishUpMessage();
 
     template <typename T>
     bool addMessageField(const T& val, const uint16_t& len = sizeof(T))
@@ -128,12 +128,6 @@ public: // <<---------------------------------------//public
 
 
 protected: // <<---------------------------------------//protected
-    char* buff = NULL;
-
-
-
-
-private: // <<---------------------------------------//private
     bool     _isConnected = false;
     Stream*  stream;
     SdFs*    sd;
@@ -141,6 +135,7 @@ private: // <<---------------------------------------//private
     char*    filePath;
     bool     useStream;
     bool     csv;
+    char*    buff = NULL;
     uint32_t buffSize;
     uint32_t buffIndex;
     char     message[log_space::MAX_MESSAGE_LEN];
