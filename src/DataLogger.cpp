@@ -198,6 +198,22 @@ bool logger::addIntStrMessageField(const int32_t& val,
 
 
 
+bool logger::addDelimiter()
+{
+    addMessageField(',');
+}
+
+
+
+
+bool logger::addNewline()
+{
+    addMessageField('\n');
+}
+
+
+
+
 bool logger::addChecksumMessageField()
 {
     if (csv)

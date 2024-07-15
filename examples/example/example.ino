@@ -35,13 +35,13 @@ bool writeComment(const long& sysUsCounter,
     if (myLog.getLogType())
     {
         myLog.addIntStrMessageField(0);
-        myLog.addMessageField(',');
+        myLog.addDelimiter();
         myLog.addIntStrMessageField(sysUsCounter);
-        myLog.addMessageField(',');
+        myLog.addDelimiter();
         myLog.addMessageFieldPtr(comment, strlen(comment));
-        myLog.addMessageField(',');
+        myLog.addDelimiter();
         myLog.addChecksumMessageField();
-        myLog.addMessageField('\n');
+        myLog.addNewline();
     }
     else
     {

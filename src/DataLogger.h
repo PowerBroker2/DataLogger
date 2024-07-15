@@ -58,6 +58,8 @@ public: // <<---------------------------------------//public
                                       const int16_t& minStringWidth  = 1);
     bool     addIntStrMessageField(const int32_t& val,
                                    const int16_t& radix = 10);
+    bool     addDelimiter();
+    bool     addNewline();
     bool     addChecksumMessageField();
     bool     finishUpMessage();
 
