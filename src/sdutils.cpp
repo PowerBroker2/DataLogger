@@ -87,10 +87,13 @@ char* join(char path[], char add[])
 
 	char* joinedPath = (char*)malloc(joinedPathLen);
 
+    auto temp1 = "%s%s";
+    auto temp2 = "%s/%s";
+
 	if (path[pathLen-1] == '/')
-		sprintf(joinedPath, "%s%s", path, add);
+		sprintf(joinedPath, temp1, path, add);
 	else
-		sprintf(joinedPath, "%s/%s", path, add);
+		sprintf(joinedPath, temp2, path, add);
 
 	return joinedPath;
 }
@@ -166,9 +169,9 @@ bool getUniqueLogName(SdFs&   _sd,
         int  _filePathStrLen = strlen(_filePath);
         char basename[90]    = {'\0'};
         int  basenameStrLen  = 0;
-        char extension[10]   = {'\0'};
+        char extension[15]   = {'\0'};
         int  extensionStrLen = 0;
-        char addon[5]        = {'\0'};
+        char addon[15]       = {'\0'};
         int  addonStrLen     = 0;
         int  addonNum        = 0;
         char fnameLen        = log_space::MAX_FILE_PATH_LEN;
