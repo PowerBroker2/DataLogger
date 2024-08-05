@@ -42,10 +42,10 @@ class logger
 public: // <<---------------------------------------//public
     void        begin(const bool& _csv          = true,
                       const uint32_t& _buffSize = log_space::DEFAULT_BUFF_SIZE);
-    void        setStream(Stream& _stream);
-    void        setSD(SdFs&       _sd,
-                      FsFile&     _logFile,
-                      const char* _filePath);
+    void        setOutput(Stream& _stream);
+    void        setOutput(      SdFs&   _sd,
+                                FsFile& _logFile,
+                          const char*   _filePath);
     void        setLogType(const bool& _csv);
     bool        getLogType();
     bool        isConnected();

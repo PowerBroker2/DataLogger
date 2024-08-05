@@ -22,7 +22,7 @@ void logger::begin(const bool& _csv, const uint32_t& _buffSize)
 
 
 
-void logger::setStream(Stream& _stream)
+void logger::setOutput(Stream& _stream)
 {
     useStream = true;
     stream    = &_stream;
@@ -31,7 +31,9 @@ void logger::setStream(Stream& _stream)
 
 
 
-void logger::setSD(SdFs& _sd, FsFile& _logFile, const char* _filePath)
+void logger::setOutput(      SdFs&   _sd,
+                             FsFile& _logFile,
+                       const char*   _filePath)
 {
     useStream = false;
     sd        = &_sd;

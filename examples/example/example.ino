@@ -77,7 +77,7 @@ void loop()
 {
   // CSV strings to SD card
   myLog.setLogType(CSV);
-  myLog.setSD(sd, logFile, fname);
+  myLog.setOutput(sd, logFile, fname);
   writeComment(micros(), "hiiiiiiiii");
   myLog.flush();
   
@@ -88,7 +88,7 @@ void loop()
   
   // CSV strings to Serial port
   myLog.setLogType(CSV);
-  myLog.setStream(Serial);
+  myLog.setOutput(Serial);
   writeComment(micros(), "hiiiiiiiii");
   myLog.flush();
   
