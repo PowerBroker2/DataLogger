@@ -21,6 +21,8 @@ namespace log_space
     const int MAX_FIELD_LEN   = 100;
 
     const int DEFAULT_BUFF_SIZE = 512;
+
+    const int MAX_FILE_PATH_LEN = 100;
 };
 
 
@@ -33,6 +35,9 @@ char*   join(char path[], char add[]);
 char*   basename(char path[]);
 char*   dirname(char path[]);
 bool    mkdir(SdFs& _sd, char path[]);
+bool    getUniqueLogName(SdFs&   _sd,
+                         FsFile& _logFile,
+                         char*   _filePath);
 
 
 

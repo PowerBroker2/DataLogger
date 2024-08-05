@@ -35,18 +35,21 @@ void logger::setOutput(      SdFs&   _sd,
                              FsFile& _logFile,
                        const char*   _filePath)
 {
-    useStream = false;
-    sd        = &_sd;
-    logFile   = &_logFile;
-
-    if (_filePath != NULL)
+    if (strlen(_filePath) <= log_space::MAX_FILE_PATH_LEN)
     {
-        filePath = _filePath;
+        useStream = false;
+        sd        = &_sd;
+        logFile   = &_logFile;
 
-        if (!sd->exists(dirname(filePath)))
-            mkdir(*sd, dirname(filePath));
+        if (_filePath != NULL)
+        {
+            filePath = _filePath;
 
-        logFile->open(filePath, FILE_WRITE);
+            if (!sd->exists(dirname(filePath)))
+                mkdir(*sd, dirname(filePath));
+
+            logFile->open(filePath, FILE_WRITE);
+        }
     }
 }
 

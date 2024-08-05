@@ -22,8 +22,8 @@ logger myLog;
 SdFs   sd;
 FsFile logFile;
 
-char* fname = join(join("logs", "test"), "test.txt"); // Results in file path of: /logs/test/test.txt
-
+char* filePath = (char*)malloc(MAX_FILE_PATH_LEN);
+auto  temp     = join(join("logs", "test"), "test.txt"); // Results in file path of: /logs/test/test.txt
 
 
 
@@ -68,6 +68,18 @@ void setup()
     Serial.println("SD initialization succeeded");
 
   myLog.begin();
+
+  memset(filePath, '\0', MAX_FILE_PATH_LEN);
+  strncpy(filePath, temp, strlen(temp)); // Results in file path of: /logs/test/test.txt
+  
+  Serial.print("File path before: ");
+  Serial.println(filePath);
+  getUniqueLogName(sd,
+                   logFile,
+                   filePath);
+  Serial.print("File path final: ");
+  Serial.println(filePath);
+  delay(500);
 }
 
 
@@ -77,7 +89,7 @@ void loop()
 {
   // CSV strings to SD card
   myLog.setLogType(CSV);
-  myLog.setOutput(sd, logFile, fname);
+  myLog.setOutput(sd, logFile, filePath);
   writeComment(micros(), "hiiiiiiiii");
   myLog.flush();
   

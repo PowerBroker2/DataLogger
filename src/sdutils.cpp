@@ -152,3 +152,69 @@ bool mkdir(SdFs& _sd, char path[])
     
     return false;
 }
+
+
+
+
+bool getUniqueLogName(SdFs&   _sd,
+                      FsFile& _logFile,
+                      char*   _filePath)
+{
+    if (strlen(_filePath) <= log_space::MAX_FILE_PATH_LEN)
+    {
+        // initialize helper variables
+        int  _filePathStrLen = strlen(_filePath);
+        char basename[90]    = {'\0'};
+        int  basenameStrLen  = 0;
+        char extension[10]   = {'\0'};
+        int  extensionStrLen = 0;
+        char addon[5]        = {'\0'};
+        int  addonStrLen     = 0;
+        int  addonNum        = 0;
+        char fnameLen        = log_space::MAX_FILE_PATH_LEN;
+        char fname[fnameLen] = {'\0'};
+
+        // Find start of file extension if exists
+        char* perPtr = strstr(_filePath, ".");
+
+        if (perPtr == NULL)
+        {
+            strncpy(basename, _filePath, _filePathStrLen);
+        }
+        else
+        {
+            strncpy(basename, _filePath, int(perPtr - _filePath));
+            strncpy(extension, perPtr, int((_filePath + _filePathStrLen) - perPtr));
+        }
+
+        basenameStrLen  = strlen(basename);
+        extensionStrLen = strlen(extension);
+
+        memset(fname, '\0', fnameLen);
+        strncpy(fname, basename, basenameStrLen);
+        strncpy(fname + basenameStrLen, extension, extensionStrLen);
+
+        // Find fname that doesn't already exist
+        while (_sd.exists(fname))
+        {
+            // Always start with base fname
+            memset(fname, '\0', strlen(fname));
+            strncpy(fname, basename, basenameStrLen);
+
+            // Construct unique addon
+            sprintf(addon, "(%u)", addonNum);
+            addonStrLen = strlen(addon);
+            addonNum++;
+
+            // Add unique addon to base fname
+            strncpy(fname + basenameStrLen, addon, addonStrLen);
+            strncpy(fname + basenameStrLen + addonStrLen, extension, extensionStrLen);
+        }
+
+        strncpy(_filePath, fname, strlen(fname));
+
+        return true;
+    }
+
+    return false;
+}
