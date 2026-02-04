@@ -24,53 +24,9 @@ namespace log_space
     const int MAX_FILE_PATH_LEN = 100; /**< Maximum file path length */
 };
 
-/**
- * @brief Count occurrences of a character in a string
- * @param input Input string
- * @param target Character to count
- * @return Number of occurrences of target in input
- */
-uint8_t numOccur(char* input, const char& target);
-
-/**
- * @brief Find the nth occurrence of a substring in a string
- * @param input Input string
- * @param target Substring to search for
- * @param ithOccur Occurrence index (1-based)
- * @return Pointer to substring start, or NULL if not found
- */
-char* findOccur(char input[], char target[], uint16_t ithOccur);
-
-/**
- * @brief Extract the substring between delimiters
- * @param input Input string
- * @param place Index of delimiter occurrence (1-based)
- * @param delim Delimiter string
- * @return Pointer to allocated substring (caller must free)
- */
-char* findSubStr(char input[], uint8_t place, const char* delim);
-
-/**
- * @brief Join two paths safely with '/' separator
- * @param path Base path
- * @param add Path to append
- * @return Pointer to newly allocated string containing joined path
- */
-char* join(char path[], char add[]);
-
-/**
- * @brief Extract basename (filename) from path
- * @param path Input path
- * @return Allocated string containing basename
- */
-char* basename(char path[]);
-
-/**
- * @brief Extract directory name from path
- * @param path Input path
- * @return Allocated string containing directory name
- */
-char* dirname(char path[]);
+void join(const char path[], const char add[], char out[], size_t outSize);
+void basename(const char path[], char out[], size_t outSize);
+void dirname(const char path[], char out[], size_t outSize);
 
 /**
  * @brief Create a directory on SD card if it does not exist
@@ -80,16 +36,11 @@ char* dirname(char path[]);
  */
 bool mkdir(SdFs& _sd, char path[]);
 
-/**
- * @brief Generate a unique log filename to prevent overwriting
- * @param _sd SdFs instance
- * @param _logFile FsFile instance
- * @param _filePath Input file path, updated to unique name
- * @return true if unique name successfully generated
- */
-bool getUniqueLogName(SdFs&   _sd,
-                      FsFile& _logFile,
-                      char*   _filePath);
+void uniqueFileName(SdFs& _sd,
+                    FsFile& _logFile,
+                    const char _filePath[],
+                    char out[],
+                    size_t outSize);
 
 /**
  * @class logger

@@ -5,219 +5,172 @@
 
 
 
-uint8_t numOccur(char* input, const char& target)
+void join(const char path[], const char add[], char out[], size_t outSize)
 {
-    char* p = input;
-    uint8_t count = 0;
+    if (!path || !add || !out || outSize == 0)
+        return;  // safety: null pointers or zero-length buffer
 
-    while (*p != '\0')
-        if (*p++ == target)
-            count++;
+    size_t pathLen = strlen(path);
 
-    return count;
+    // Determine if we need a slash
+    bool needSlash = (pathLen > 0 && path[pathLen - 1] != '/');
+
+    // snprintf automatically truncates if outSize is too small
+    if (needSlash)
+        snprintf(out, outSize, "%s/%s", path, add);
+    else
+        snprintf(out, outSize, "%s%s", path, add);
 }
 
 
 
 
-char* findOccur(char input[], char target[], uint16_t ithOccur)
+void basename(const char path[], char out[], size_t outSize)
 {
-	char* argP = input;
-	char* divP = NULL;
-
-	for (uint8_t i=0; i<ithOccur; i++)
-	{
-		divP = strstr(argP, target);
-
-		if (!divP)
-			return NULL;
-
-		argP = divP + 1;
-	}
-
-	return divP;
-}
-
-
-
-
-char* findSubStr(char input[], uint8_t place, const char* delim)
-{
-	char* argP = input;
-	char* divP = NULL;
-	char* returnStr;
-
-	for (uint8_t i=0; i<place; i++)
-	{
-		divP = strstr(argP, delim);
-
-		if (!divP)
-			return NULL;
-
-		argP = divP + 1;
-	}
-
-	divP = strstr(argP, delim);
-
-	if (divP)
-	{
-		uint32_t argLen = divP - argP + 1;
-
-		returnStr = (char*)malloc(argLen);
-		memcpy(returnStr, argP, argLen);
-		returnStr[argLen - 1] = '\0';
-	}
-	else
-	{
-		returnStr = (char *)malloc(strlen(argP) + 1);
-		memcpy(returnStr, argP, strlen(argP) + 1);
-	}
-
-	return returnStr;
-}
-
-
-
-
-char* join(char path[], char add[])
-{
-	uint16_t pathLen = strlen(path);
-	uint16_t addLen = strlen(add);
-	uint16_t joinedPathLen = pathLen + addLen + 1; // add one for joining slash
-
-	char* joinedPath = (char*)malloc(joinedPathLen);
-
-    auto temp1 = "%s%s";
-    auto temp2 = "%s/%s";
-
-	if (path[pathLen-1] == '/')
-		sprintf(joinedPath, temp1, path, add);
-	else
-		sprintf(joinedPath, temp2, path, add);
-
-	return joinedPath;
-}
-
-
-
-
-char* basename(char path[])
-{
-    uint8_t numLevels = numOccur(path, '/');
-
-    if (path[strlen(path) - 1] == '/')
-        numLevels--;
-
-    return findSubStr(path, numLevels, "/");
-}
-
-
-
-
-char* dirname(char path[])
-{
-	char* dirName = (char*)malloc(strlen(path) + 1);
-
-	memcpy(dirName, path, strlen(path) + 1);
-	uint8_t numLevels = numOccur(dirName, '/');
-
-	if (dirName[strlen(dirName) - 1] == '/')
-		numLevels--;
-
-	if (numLevels > 1)
-	{
-		char rootStr[] = { '/', '\0' };
-		dirName[(int)findOccur(dirName, rootStr, numLevels) - (int)dirName] = '\0';
-	}
-	else
-	{
-		dirName[0] = '/';
-		dirName[1] = '\0';
-	}
-
-	return dirName;
-}
-
-
-
-
-bool mkdir(SdFs& _sd, char path[])
-{
-    if (!_sd.exists(path))
+    if (!path || !out || outSize == 0)
     {
-        _sd.mkdir(path);
-
-        if (_sd.exists(path))
-            return true;
-        else
-            return false;
+        if (outSize > 0) out[0] = '\0';
+        return;
     }
-    
-    return false;
+
+    size_t len = strlen(path);
+    if (len == 0)
+    {
+        out[0] = '\0';
+        return;
+    }
+
+    // Skip trailing slashes
+    while (len > 0 && path[len - 1] == '/')
+        len--;
+
+    if (len == 0)
+    {
+        out[0] = '\0';
+        return;
+    }
+
+    // Find last slash
+    const char* lastSlash = path;
+    for (size_t i = 0; i < len; i++)
+    {
+        if (path[i] == '/')
+            lastSlash = path + i + 1;  // character after last slash
+    }
+
+    // Copy basename into out, safely
+    snprintf(out, outSize, "%.*s", (int)(len - (lastSlash - path)), lastSlash);
 }
 
 
 
 
-bool getUniqueLogName(SdFs&   _sd,
-                      FsFile& _logFile,
-                      char*   _filePath)
+void dirname(const char path[], char out[], size_t outSize)
 {
-    if (strlen(_filePath) <= log_space::MAX_FILE_PATH_LEN)
+    if (!path || !out || outSize == 0)
     {
-        // initialize helper variables
-        int  _filePathStrLen = strlen(_filePath);
-        char basename[90]    = {'\0'};
-        int  basenameStrLen  = 0;
-        char extension[15]   = {'\0'};
-        int  extensionStrLen = 0;
-        char addon[15]       = {'\0'};
-        int  addonStrLen     = 0;
-        int  addonNum        = 0;
-        char fnameLen        = log_space::MAX_FILE_PATH_LEN;
-        char fname[fnameLen] = {'\0'};
+        if (outSize > 0) out[0] = '\0';
+        return;
+    }
 
-        // Find start of file extension if exists
-        char* perPtr = strstr(_filePath, ".");
+    size_t len = strlen(path);
+    if (len == 0)
+    {
+        snprintf(out, outSize, ".");
+        return;
+    }
 
-        if (perPtr == NULL)
-        {
-            strncpy(basename, _filePath, _filePathStrLen);
-        }
-        else
-        {
-            strncpy(basename, _filePath, int(perPtr - _filePath));
-            strncpy(extension, perPtr, int((_filePath + _filePathStrLen) - perPtr));
-        }
+    // Strip trailing slashes
+    while (len > 1 && path[len - 1] == '/')
+        len--;
 
-        basenameStrLen  = strlen(basename);
-        extensionStrLen = strlen(extension);
+    // Find last slash in trimmed path
+    int lastSlash = -1;
+    for (size_t i = 0; i < len; i++)
+    {
+        if (path[i] == '/')
+            lastSlash = i;
+    }
 
-        memset(fname, '\0', fnameLen);
-        strncpy(fname, basename, basenameStrLen);
-        strncpy(fname + basenameStrLen, extension, extensionStrLen);
+    if (lastSlash == -1)
+    {
+        snprintf(out, outSize, ".");
+    }
+    else if (lastSlash == 0)
+    {
+        snprintf(out, outSize, "/");
+    }
+    else
+    {
+        snprintf(out, outSize, "%.*s", (int)lastSlash, path);
+    }
+}
 
-        // Find fname that doesn't already exist
-        while (_sd.exists(fname))
-        {
-            // Always start with base fname
-            memset(fname, '\0', strlen(fname));
-            strncpy(fname, basename, basenameStrLen);
 
-            // Construct unique addon
-            sprintf(addon, "(%u)", addonNum);
-            addonStrLen = strlen(addon);
-            addonNum++;
 
-            // Add unique addon to base fname
-            strncpy(fname + basenameStrLen, addon, addonStrLen);
-            strncpy(fname + basenameStrLen + addonStrLen, extension, extensionStrLen);
-        }
 
-        strncpy(_filePath, fname, strlen(fname));
+bool mkdir(SdFs& _sd, const char path[])
+{
+    if (!path || strlen(path) == 0)
+        return false;
 
+    if (_sd.exists(path))
         return true;
-    }
+
+    if (_sd.mkdir(path))
+        return true;
 
     return false;
+}
+
+
+
+
+
+void uniqueFileName(SdFs& _sd,
+                    FsFile& _logFile,
+                    const char _filePath[],
+                    char out[],
+                    size_t outSize)
+{
+    if (!_filePath || !out || outSize == 0)
+    {
+        if (out && outSize > 0)
+            out[0] = '\0';
+        return;
+    }
+
+    // Find last '.' to separate extension
+    const char* dot = strrchr(_filePath, '.');
+    size_t baseLen  = dot ? (size_t)(dot - _filePath) : strlen(_filePath);
+
+    unsigned int addonNum = 0;
+
+    while (true)
+    {
+        if (addonNum == 0)
+        {
+            // Original filename
+            snprintf(out, outSize,
+                     "%.*s%s",
+                     (int)baseLen,
+                     _filePath,
+                     dot ? dot : "");
+        }
+        else
+        {
+            // Add (N) before extension
+            snprintf(out, outSize,
+                     "%.*s(%u)%s",
+                     (int)baseLen,
+                     _filePath,
+                     addonNum,
+                     dot ? dot : "");
+        }
+
+        if (!_sd.exists(out))
+            return;
+
+        addonNum++;
+    }
 }
