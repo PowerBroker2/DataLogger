@@ -2,25 +2,15 @@
 #include "SdFat.h"
 #include "DataLogger.h"
 
-
-
-
-void logger::begin(const bool& _csv, const uint32_t& _buffSize)
+void logger::begin()
 {
-    useStream = true;
-    stream    = &Serial;
-    
-    setLogType(_csv);
-    buffSize  = (_buffSize / 16) * 16; // Force buffer size to be multiple of 16 bytes (128 bits) to make encryption easier if used
-    buff      = new char[buffSize];
+    _isConnected = false;
+
     buffIndex = 0;
-    memset(buff, ' ', buffSize);
+    memset(buff, '\0', sizeof(buff));
 
     messageIndex = 0;
 }
-
-
-
 
 void logger::setOutput(Stream& _stream)
 {
@@ -28,101 +18,74 @@ void logger::setOutput(Stream& _stream)
     stream    = &_stream;
 }
 
-
-
-
-void logger::setOutput(      SdFs&   _sd,
-                             FsFile& _logFile,
-                       const char*   _filePath)
+void logger::setOutput(const SdSpiConfig& _sdConfig,
+                       const char*        _filePath)
 {
-    if (strlen(_filePath) <= log_space::MAX_FILE_PATH_LEN)
-    {
-        useStream = false;
-        sd        = &_sd;
-        logFile   = &_logFile;
+    _isConnected = false;
+    useStream    = false;
 
-        if (_filePath != NULL)
-        {
-            filePath = _filePath;
+    if (!sd.begin(_sdConfig))
+        return;
 
-            if (!sd->exists(dirname(filePath)))
-                mkdir(*sd, dirname(filePath));
+    if (!_filePath)
+        return;
 
-            logFile->open(filePath, FILE_WRITE);
-        }
-    }
+    size_t len = strlen(_filePath);
+    if (len > log_space::MAX_FILE_PATH_LEN)
+        return;
+
+    strncpy(filePath, _filePath, sizeof(filePath));
+    filePath[sizeof(filePath) - 1] = '\0';
+
+    dirname(filePath, dirPath, sizeof(dirPath));
+
+    if (!sd.exists(dirPath))
+        mkdir(sd, dirPath);
+
+    if (logFile.open(filePath, FILE_WRITE))
+        _isConnected = true;
 }
 
-
-
-
-void logger::setLogType(const bool& _csv)
+void logger::setLogType(bool _csv)
 {
     csv = _csv;
 }
-
-
-
 
 bool logger::getLogType()
 {
     return csv;
 }
 
-
-
-
 bool logger::isConnected()
 {
     return _isConnected;
 }
-
-
-
-
 
 void logger::resetMessageIndex()
 {
     messageIndex = 0;
 }
 
-
-
-
 uint16_t logger::calculateChecksum()
 {
-    uint16_t output = 0;
+    uint16_t sum = 0;
+    for (uint32_t i = 0; i < messageIndex; i++)
+        sum += message[i];
 
-    for (uint32_t i=0; i<messageIndex; i++)
-        output += message[i];
-    
-    return ~output;
+    return ~sum;
 }
-
-
-
 
 int16_t logger::cpyMessageToBuff(const int& startIndex)
 {
-    int16_t available    = buffSize - buffIndex;
-    int16_t toWrite      = messageIndex - startIndex;
-    int16_t bytesWritten = 0;
+    int16_t available = buffSize - buffIndex;
+    int16_t toWrite   = messageIndex - startIndex;
+    int16_t bytes     = min(available, toWrite);
 
-    if (toWrite > available)
-        bytesWritten = available;
-    else
-        bytesWritten = toWrite;
+    memcpy(&buff[buffIndex], &message[startIndex], bytes);
+    buffIndex += bytes;
 
-    for (int i=0; i<bytesWritten; i++)
-        buff[buffIndex + i] = message[startIndex + i];
-
-    buffIndex += bytesWritten;
-
-    return bytesWritten;
+    return bytes;
 }
-
-
-
 
 int logger::flush()
 {
@@ -136,62 +99,44 @@ int logger::flush()
     {
         if (!_isConnected)
         {
-            if (!sd->exists(dirname(filePath)))
-                mkdir(*sd, dirname(filePath));
-            
-            logFile->open(filePath, FILE_WRITE);
+            if (!sd.exists(dirPath))
+                mkdir(sd, dirPath);
+
+            logFile.open(filePath, FILE_WRITE);
         }
 
-        int numWritten = logFile->write(buff, buffIndex);
+        int written = logFile.write(buff, buffIndex);
+        _isConnected = (written > 0);
 
-        if (!numWritten)
-        {
-            _isConnected = false;
-            return 0;
-        }
-        else
-            _isConnected = true;
-
-        logFile->close();
-        logFile->open(filePath, FILE_WRITE);
+        logFile.close();
+        logFile.open(filePath, FILE_WRITE);
     }
-        
+
     buffIndex = 0;
-    memset(buff, ' ', buffSize);
-    
+    memset(buff, '\0', sizeof(buff));
+
     return output;
 }
-
-
-
 
 bool logger::finishUpMessage()
 {
     uint32_t wrote = cpyMessageToBuff();
-        
     if (wrote < messageIndex)
     {
         flush();
         cpyMessageToBuff(wrote);
         return true;
     }
-
     return false;
 }
 
-
-
-
-bool logger::addDoubleStrMessageField(const double&  val,
+bool logger::addDoubleStrMessageField(const double& val,
                                       const int16_t& numAfterDecimal,
                                       const int16_t& minStringWidth)
 {
     dtostrf(val, minStringWidth, numAfterDecimal, field);
     return addMessageFieldPtr(field, strlen(field));
 }
-
-
-
 
 bool logger::addIntStrMessageField(const int32_t& val,
                                    const int16_t& radix)
@@ -200,24 +145,15 @@ bool logger::addIntStrMessageField(const int32_t& val,
     return addMessageFieldPtr(field, strlen(field));
 }
 
-
-
-
 bool logger::addDelimiter()
 {
     return addMessageField(',');
 }
 
-
-
-
 bool logger::addNewline()
 {
     return addMessageField('\n');
 }
-
-
-
 
 bool logger::addChecksumMessageField()
 {
@@ -226,6 +162,27 @@ bool logger::addChecksumMessageField()
         sprintf(field, "%hu", calculateChecksum());
         return addMessageFieldPtr(field, strlen(field));
     }
-    else
-        return addMessageField(calculateChecksum());
+    return addMessageField(calculateChecksum());
+}
+
+bool logger::addMessageFieldPtr(uint8_t* val, const uint16_t& len)
+{
+    uint32_t newIndex = messageIndex + len;
+    if (newIndex > log_space::MAX_MESSAGE_LEN)
+        return false;
+
+    memcpy(&message[messageIndex], val, len);
+    messageIndex = newIndex;
+    return true;
+}
+
+bool logger::addMessageFieldPtr(const char* val, const uint16_t& len)
+{
+    uint32_t newIndex = messageIndex + len;
+    if (newIndex > log_space::MAX_MESSAGE_LEN)
+        return false;
+
+    memcpy(&message[messageIndex], val, len);
+    messageIndex = newIndex;
+    return true;
 }
