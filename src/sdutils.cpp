@@ -69,7 +69,8 @@ void dirname(const char path[], char out[], size_t outSize)
 {
     if (!path || !out || outSize == 0)
     {
-        if (outSize > 0) out[0] = '\0';
+        if (outSize > 0)
+            out[0] = '\0';
         return;
     }
 
