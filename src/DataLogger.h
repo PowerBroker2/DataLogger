@@ -47,12 +47,15 @@ void uniqueFileName(SdFs& _sd,
 class logger
 {
 public:
+    logger() = default;
+    ~logger();
+
     void begin();
+    void end();
 
     void setOutput(Stream& _stream);
-
-    void setOutput(const SdSpiConfig& _sdConfig,
-                   const char*        _filePath);
+    void setOutput(const SdioConfig& _sdConfig,
+                   const char*       _filePath);
 
     void setLogType(bool _csv);
     bool getLogType();
@@ -60,8 +63,8 @@ public:
 
     void resetMessageIndex();
     uint16_t calculateChecksum();
-    int16_t cpyMessageToBuff(const int& startIndex = 0);
-    virtual int flush();
+    int16_t cpyMessageToBuff(int startIndex = 0);
+    int flush();
 
     bool addDoubleStrMessageField(const double& val,
                                   const int16_t& numAfterDecimal = 6,
@@ -113,5 +116,4 @@ protected:
     uint32_t messageIndex = 0;
 
     char     field[log_space::MAX_FIELD_LEN] = {0};
-    int      fieldLen = 0;
 };

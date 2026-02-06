@@ -2,27 +2,50 @@
 #include "SdFat.h"
 #include "DataLogger.h"
 
+logger::~logger()
+{
+    end();
+}
+
 void logger::begin()
 {
     _isConnected = false;
-
-    buffIndex = 0;
-    memset(buff, '\0', sizeof(buff));
-
+    buffIndex    = 0;
     messageIndex = 0;
+}
+
+void logger::end()
+{
+    if (!useStream && logFile.isOpen())
+    {
+        logFile.sync();
+        logFile.close();
+    }
+
+    _isConnected = false;
+    useStream    = true;
 }
 
 void logger::setOutput(Stream& _stream)
 {
-    useStream = true;
-    stream    = &_stream;
+    if (!useStream && logFile.isOpen())
+    {
+        logFile.sync();
+        logFile.close();
+    }
+
+    useStream    = true;
+    stream       = &_stream;
+    _isConnected = true;
 }
 
-void logger::setOutput(const SdSpiConfig& _sdConfig,
-                       const char*        _filePath)
+void logger::setOutput(const SdioConfig& _sdConfig,
+                       const char*       _filePath)
 {
-    _isConnected = false;
+    end();
+
     useStream    = false;
+    _isConnected = false;
 
     if (!sd.begin(_sdConfig))
         return;
@@ -42,8 +65,7 @@ void logger::setOutput(const SdSpiConfig& _sdConfig,
     if (!sd.exists(dirPath))
         mkdir(sd, dirPath);
 
-    if (logFile.open(filePath, FILE_WRITE))
-        _isConnected = true;
+    _isConnected = logFile.open(filePath, FILE_WRITE);
 }
 
 void logger::setLogType(bool _csv)
@@ -70,14 +92,14 @@ uint16_t logger::calculateChecksum()
 {
     uint16_t sum = 0;
     for (uint32_t i = 0; i < messageIndex; i++)
-        sum += message[i];
+        sum += (uint8_t)message[i];
 
     return ~sum;
 }
 
-int16_t logger::cpyMessageToBuff(const int& startIndex)
+int16_t logger::cpyMessageToBuff(int startIndex)
 {
-    int16_t available = buffSize - buffIndex;
+    int16_t available = sizeof(buff) - buffIndex;
     int16_t toWrite   = messageIndex - startIndex;
     int16_t bytes     = min(available, toWrite);
 
@@ -89,7 +111,10 @@ int16_t logger::cpyMessageToBuff(const int& startIndex)
 
 int logger::flush()
 {
-    uint32_t output = buffIndex;
+    if (buffIndex == 0)
+        return 0;
+
+    int output = buffIndex;
 
     if (useStream)
     {
@@ -97,24 +122,14 @@ int logger::flush()
     }
     else
     {
-        if (!_isConnected)
-        {
-            if (!sd.exists(dirPath))
-                mkdir(sd, dirPath);
+        if (!_isConnected || !logFile.isOpen())
+            return 0;
 
-            logFile.open(filePath, FILE_WRITE);
-        }
-
-        int written = logFile.write(buff, buffIndex);
-        _isConnected = (written > 0);
-
-        logFile.close();
-        logFile.open(filePath, FILE_WRITE);
+        logFile.write(buff, buffIndex);
+        logFile.sync();
     }
 
     buffIndex = 0;
-    memset(buff, '\0', sizeof(buff));
-
     return output;
 }
 

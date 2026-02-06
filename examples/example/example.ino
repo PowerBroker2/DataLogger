@@ -1,38 +1,27 @@
 #include "DataLogger.h"
 #include "SdFat.h"
 
-
-
-
 #ifdef SDCARD_SS_PIN
 const uint8_t SD_CS_PIN = SDCARD_SS_PIN;
-#endif // SDCARD_SS_PIN
+#endif
+
 #define SPI_CLOCK SD_SCK_MHZ(50)
 #define SD_CONFIG SdioConfig(FIFO_SDIO)
 
-
-
-
 using namespace log_space;
 
-
-
-
 logger myLog;
-SdFs   sd;
-FsFile logFile;
 
-char* filePath = (char*)malloc(MAX_FILE_PATH_LEN);
-auto  temp     = join(join("logs", "test"), "test.txt"); // Results in file path of: /logs/test/test.txt
+/* Fixed buffers (avoid malloc on embedded) */
+char filePath[MAX_FILE_PATH_LEN + 1] = {0};
+char tempPath[MAX_FILE_PATH_LEN + 1] = {0};
 
-
-
-bool writeComment(const long& sysUsCounter,
-                  const char  comment[])
+/* Example helper */
+bool writeComment(uint32_t sysUsCounter, const char* comment)
 {
     myLog.resetMessageIndex();
 
-    if (myLog.getLogType())
+    if (myLog.getLogType() == CSV)
     {
         myLog.addIntStrMessageField(0);
         myLog.addDelimiter();
@@ -45,8 +34,8 @@ bool writeComment(const long& sysUsCounter,
     }
     else
     {
-        myLog.addMessageField(log_space::PREAMBLE);
-        myLog.addMessageField(0);
+        myLog.addMessageField(PREAMBLE);
+        myLog.addMessageField((uint8_t)0);
         myLog.addMessageField(sysUsCounter);
         myLog.addMessageFieldPtr(comment, strlen(comment));
         myLog.addChecksumMessageField();
@@ -55,60 +44,55 @@ bool writeComment(const long& sysUsCounter,
     return myLog.finishUpMessage();
 }
 
-
-
-
 void setup()
 {
-  Serial.begin(115200);
+    Serial.begin(115200);
+    while (!Serial) {}
 
-  if (!sd.begin(SD_CONFIG))
-    Serial.println("<<<<<<<<<<<<<<<<<<<< SD initialization failed >>>>>>>>>>>>>>>>>>>>");
-  else
-    Serial.println("SD initialization succeeded");
+    Serial.println("Logger example starting");
 
-  myLog.begin();
+    myLog.begin();
 
-  memset(filePath, '\0', MAX_FILE_PATH_LEN);
-  strncpy(filePath, temp, strlen(temp)); // Results in file path of: /logs/test/test.txt
-  
-  Serial.print("File path before: ");
-  Serial.println(filePath);
-  getUniqueLogName(sd,
-                   logFile,
-                   filePath);
-  Serial.print("File path final: ");
-  Serial.println(filePath);
-  delay(500);
+    /* Build file path: /logs/test/test.txt */
+    join("logs", "test", tempPath, sizeof(tempPath));
+    join(tempPath, "test.txt", filePath, sizeof(filePath));
+
+    Serial.print("Log path: ");
+    Serial.println(filePath);
+
+    /* Initialize SD output */
+    myLog.setOutput(SD_CONFIG, filePath);
+
+    if (!myLog.isConnected())
+        Serial.println("SD logging not connected");
+    else
+        Serial.println("SD logging ready");
 }
-
-
-
 
 void loop()
 {
-  // CSV strings to SD card
-  myLog.setLogType(CSV);
-  myLog.setOutput(sd, logFile, filePath);
-  writeComment(micros(), "hiiiiiiiii");
-  myLog.flush();
-  
-  // Binary packets to SD card
-  myLog.setLogType(BINARY);
-  writeComment(micros(), "hiiiiiiiii");
-  myLog.flush();
-  
-  // CSV strings to Serial port
-  myLog.setLogType(CSV);
-  myLog.setOutput(Serial);
-  writeComment(micros(), "hiiiiiiiii");
-  myLog.flush();
-  
-  // Binary packets to Serial port
-  myLog.setLogType(BINARY);
-  writeComment(micros(), "hiiiiiiiii");
-  myLog.flush();
-  
-  Serial.println("\nLogged");
-  delay(1000);
+    /* CSV → SD */
+    myLog.setLogType(CSV);
+    myLog.setOutput(SD_CONFIG, filePath);
+    writeComment(micros(), "CSV to SD");
+    myLog.flush();
+
+    /* Binary → SD */
+    myLog.setLogType(BINARY);
+    writeComment(micros(), "Binary to SD");
+    myLog.flush();
+
+    /* CSV → Serial */
+    myLog.setLogType(CSV);
+    myLog.setOutput(Serial);
+    writeComment(micros(), "CSV to Serial");
+    myLog.flush();
+
+    /* Binary → Serial */
+    myLog.setLogType(BINARY);
+    writeComment(micros(), "Binary to Serial");
+    myLog.flush();
+
+    Serial.println("\nLogged");
+    delay(1000);
 }
