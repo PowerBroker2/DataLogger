@@ -3,3 +3,4 @@
 #include "SdFat.h"
 #include "sdutils.h"
 #include "SdLogger.h"
+#include "StreamLogger.h"
