@@ -2,9 +2,6 @@
 #include "SdFat.h"
 #include "DataLogger.h"
 
-
-
-
 void join(const char path[], const char add[], char out[], size_t outSize)
 {
     if (!path || !add || !out || outSize == 0)
@@ -21,9 +18,6 @@ void join(const char path[], const char add[], char out[], size_t outSize)
     else
         snprintf(out, outSize, "%s%s", path, add);
 }
-
-
-
 
 void basename(const char path[], char out[], size_t outSize)
 {
@@ -61,9 +55,6 @@ void basename(const char path[], char out[], size_t outSize)
     // Copy basename into out, safely
     snprintf(out, outSize, "%.*s", (int)(len - (lastSlash - path)), lastSlash);
 }
-
-
-
 
 void dirname(const char path[], char out[], size_t outSize)
 {
@@ -107,9 +98,6 @@ void dirname(const char path[], char out[], size_t outSize)
     }
 }
 
-
-
-
 bool mkdir(SdFs& _sd, const char path[])
 {
     if (!path || strlen(path) == 0)
@@ -123,10 +111,6 @@ bool mkdir(SdFs& _sd, const char path[])
 
     return false;
 }
-
-
-
-
 
 void uniqueFileName(SdFs& _sd,
                     FsFile& _logFile,
